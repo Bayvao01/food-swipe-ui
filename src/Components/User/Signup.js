@@ -14,9 +14,18 @@ import Button from "@material-ui/core/Button";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import phData from "../../assets/country-ph-code.json";
+import axios from "axios";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import Backdrop from "@material-ui/core/Backdrop";
+import Snackbar from '@material-ui/core/Snackbar';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
 
 const useStyles = makeStyles((theme) => ({
+  backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: "#fff",
+  },
   formContainer: {
     border: "1px #ddd solid",
     marginTop: "10px",
@@ -62,6 +71,15 @@ const useStyles = makeStyles((theme) => ({
       textDecoration: "underline",
     },
   },
+  error: {
+    color: "#c40000",
+    fontSize: "16px",
+    fontWeight: 500,
+    font: "Amazon Ember, Arial, sans-serif",
+    marginTop: "5px",
+    marginBottom: "3px",
+    contrast: 6.27
+  }
 }));
 
 const BootstrapInput = withStyles((theme) => ({
@@ -94,6 +112,11 @@ const BootstrapInput = withStyles((theme) => ({
       boxShadow: `${alpha(theme.palette.secondary.main, 0.25)} 0 0 0 0.2rem`,
       borderColor: theme.palette.secondary.main,
     },
+    "&:invalid:not(:focus)": {
+        boxShadow: `${alpha(theme.palette.secondary.main, 0.25)} 0 0 0 0.2rem`,
+        borderColor: "red",
+    }
+    
   },
 }))(InputBase);
 
@@ -104,8 +127,37 @@ function Signup() {
   const theme = useTheme();
   const matchesMD = useMediaQuery(theme.breakpoints.down("md"));
   const [openTooltip, setOpenTooltip] = React.useState(false);
-  const [openPasswordValidTooltip, setPasswordValidOpenTooltip] =
-    React.useState(false);
+  const [openPasswordValidTooltip, setPasswordValidOpenTooltip] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const [values, setValues] = React.useState({
+    firstName: location.state ? location.state.firstName : "",
+    lastName: location.state ? location.state.lastName : "",
+    email: location.state ? location.state.email : "",
+    phoneNumber: location.state ? location.state.phoneNumber : "",
+    password: "",
+    repassword: "",
+  });
+
+  const [errors, setErrors] = React.useState({
+    firstNameError: "",
+    lastNameError: "",
+    emailError: "",
+    phoneNumberError: "",
+    passwordError: "",
+    repasswordError: "",
+    generalError: ""
+  });
+
+  const [success, setSuccess] = React.useState({
+    status: "",
+    message: "",
+  });
+
+  const [openSnakBar, setSnackBarOpen] = React.useState(false);
+
+  function handleToggle(value) {
+    setOpen(value);
+  };
 
   const handlePasswordValidTooltipClose = () => {
     setPasswordValidOpenTooltip(false);
@@ -123,23 +175,13 @@ function Signup() {
     setOpenTooltip(true);
   };
 
-  const [values, setValues] = React.useState({
-    firstName: location.state ? location.state.firstName : "",
-    lastName: location.state ? location.state.lastName : "",
-    email: location.state ? location.state.email : "",
-    phoneNumber: location.state ? location.state.phoneNumber : "",
-    password: "",
-    repassword: "",
-  });
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
 
-  const [errors, setErrors] = React.useState({
-    firstNameError: "",
-    lastNameError: "",
-    emailError: "",
-    phoneNumberError: "",
-    passwordError: "",
-    repasswordError: "",
-  });
+    setSnackBarOpen(false);
+  };
 
   const setRegirstrationData = (event) => {
     const fieldName = event.target.name;
@@ -154,6 +196,7 @@ function Signup() {
       phoneNumberError: "",
       passwordError: "",
       repasswordError: "",
+      generalError: ""
     });
     setValues({
       ...values,
@@ -165,52 +208,57 @@ function Signup() {
     return string[0].toUpperCase() + string.slice(1);
   };
 
-  const registerUser = (event) => {
-    event.preventDefault();
-    console.log(values);
-
-    console.log(phData);
+  function validateUser() {
     if (!values.firstName) {
       setErrors({
         ...errors,
         firstNameError: "First Name cannot be empty",
       });
-      return;
+      return false;
     }
     if (!values.lastName) {
       setErrors({
         ...errors,
         lastNameError: "Last Name cannot be empty",
       });
-      return;
+      return false;
     }
     if (!values.email) {
       setErrors({
         ...errors,
         emailError: "Email cannot be empty",
       });
-      return;
+      return false;
     }
+
+    if (!values.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
+      setErrors({
+        ...errors,
+        emailError: "Enter a valid email",
+      });
+      return false;
+    }
+
     if (!values.phoneNumber || values.phoneNumber.length !== 10) {
       setErrors({
         ...errors,
         phoneNumberError: "Phone Number cannot be empty",
       });
-      return;
+      return false;
     }
     if (!values.password) {
       setErrors({
         ...errors,
         passwordError: "Password cannot be empty",
       });
-      return;
+      return false;
     }
     if (!values.repassword) {
       setErrors({
         ...errors,
         repasswordError: "Confirm Password cannot be empty",
       });
-      return;
+      return false;
     }
     if (
       values.password &&
@@ -221,7 +269,7 @@ function Signup() {
         ...errors,
         repasswordError: "Password and Confirm Password should match",
       });
-      return;
+      return false;
     }
 
     console.log(errors);
@@ -234,14 +282,122 @@ function Signup() {
       errors.passwordError ||
       errors.repasswordError
     ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async function postRegistrationData() {
+    try {
+      let response = await axios.post(
+        "http://localhost:8080/v1/users/register",
+        {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          email: values.email,
+          contactNumber: values.phoneNumber,
+          password: values.password,
+        }
+      );
+
+      if (response.status === 200) {
+        setSuccess({
+          status: response.data.status,
+          message: response.data.message,
+        });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+
+      const errorResp = error.response;
+
+      if (errorResp.status === 400) {
+        const err = errorResp.data.errors;
+
+        err.map((e) => {
+          if (e.field === "firstName") {
+            setErrors({
+              ...errors,
+              firstNameError: e.defaultMessage,
+            });
+            return false;
+          }
+          if (e.field === "lastName") {
+            setErrors({
+              ...errors,
+              lastNameError: e.defaultMessage,
+            });
+            return false;
+          }
+          if (e.field === "email") {
+            setErrors({
+              ...errors,
+              emailError: e.defaultMessage,
+            });
+            return false;
+          }
+          if (e.field === "contactNumber") {
+            setErrors({
+              ...errors,
+              phoneNumberError: e.defaultMessage,
+            });
+            return false;
+          }
+          if (e.field === "password") {
+            setErrors({
+              ...errors,
+              passwordError: e.defaultMessage,
+            });
+            return false;
+          }
+          return false;
+        });
+      }
+
+      if(errorResp.data.status === 1000){
+        setErrors({
+          ...errors,
+          generalError: errorResp.data.message,
+        });
+        setSnackBarOpen(true);
+        return false;
+      }
+
+      return false;
+    }
+  }
+
+  const registerUser = async (event) => {
+    event.preventDefault();
+
+    const validFlag = validateUser();
+
+    if (!validFlag) {
       return;
     }
 
-    navigate("/phoneConfirmation", { state: values });
+    handleToggle(true);
+    console.log(open);
+
+    const data = await postRegistrationData();
+
+    handleToggle(false);
+
+    if (!data) {
+      return;
+    }
+
+    console.log(open);
+    console.log(errors);
+    console.log(success);
+    //navigate("/phoneConfirmation", { state: values });
   };
 
   const passwordValidationRules = (
-    <>
+    <React.Fragment>
       <Typography>
         1. Password should contain atleast one upperer case letter [A-Z]
       </Typography>
@@ -258,15 +414,15 @@ function Signup() {
       <Typography>
         5. Password should be atleast 8 characters in length
       </Typography>
-    </>
+    </React.Fragment>
   );
 
   const confirmPasswordValidationRules = (
-    <>
+    <React.Fragment>
       <Typography>
         Entered password and confirm password should match.
       </Typography>
-    </>
+    </React.Fragment>
   );
 
   return (
@@ -279,6 +435,30 @@ function Signup() {
       <Grid item>
         <img src={logo} alt="LOGO" className={classes.logo} />
       </Grid>
+      <div>
+
+      
+      
+      <Snackbar
+        anchorOrigin={{
+          vertical: 'center',
+          horizontal: 'center',
+        }}
+        open={openSnakBar}
+        onClose={handleSnackbarClose}
+        message={errors.generalError}
+        ContentProps={{
+          style: {backgroundColor:"#FF3232"}
+        }}
+        action={
+          <React.Fragment>
+            <IconButton size="small" aria-label="close"  color="inherit" onClick={handleSnackbarClose}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </React.Fragment>
+        }
+      />
+    </div>
       <Grid
         item
         container
@@ -297,6 +477,7 @@ function Signup() {
               </InputLabel>
 
               <BootstrapInput
+                required={errors.firstNameError}
                 placeholder="First Name"
                 value={values.firstName}
                 onChange={setRegirstrationData}
@@ -309,7 +490,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.firstNameError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.firstNameError}
             </InputLabel>
           ) : undefined}
@@ -319,6 +500,7 @@ function Signup() {
                 Last Name
               </InputLabel>
               <BootstrapInput
+                required={errors.lastNameError}
                 placeholder="Last Name"
                 id="lastName"
                 value={values.lastName}
@@ -331,7 +513,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.lastNameError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.lastNameError}
             </InputLabel>
           ) : undefined}
@@ -341,6 +523,8 @@ function Signup() {
                 Email
               </InputLabel>
               <BootstrapInput
+                required={errors.emailError}
+                error={errors.emailError}
                 placeholder="something@example.com"
                 id="email"
                 value={values.email}
@@ -353,7 +537,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.emailError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.emailError}
             </InputLabel>
           ) : undefined}
@@ -363,6 +547,7 @@ function Signup() {
                 Phone Number
               </InputLabel>
               <BootstrapInput
+                required={errors.phoneNumberError}
                 type="number"
                 placeholder="Phone Number"
                 id="phone"
@@ -376,7 +561,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.phoneNumberError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.phoneNumberError}
             </InputLabel>
           ) : undefined}
@@ -386,6 +571,7 @@ function Signup() {
                 Password
               </InputLabel>
               <BootstrapInput
+                required={errors.passwordError}
                 placeholder="At least 8 characters"
                 type={values.showPassword ? "text" : "password"}
                 id="password"
@@ -417,7 +603,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.passwordError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.passwordError}
             </InputLabel>
           ) : undefined}
@@ -431,6 +617,7 @@ function Signup() {
                 Confirm Password
               </InputLabel>
               <BootstrapInput
+                required={errors.repasswordError}
                 placeholder="Password and confirm password should match"
                 type={values.showPassword ? "text" : "password"}
                 id="repassword"
@@ -464,7 +651,7 @@ function Signup() {
             </FormControl>
           </Grid>
           {errors.repasswordError ? (
-            <InputLabel shrink style={{ color: "red" }}>
+            <InputLabel shrink className={classes.error}>
               {errors.repasswordError}
             </InputLabel>
           ) : undefined}
@@ -492,12 +679,18 @@ function Signup() {
         <Grid item container className={classes.userForm}>
           <Typography variant="body2">
             Already have an account?{" "}
-            <Link to="/" className={classes.link}>
+            <Link to="/login" className={classes.link}>
               {" "}
               Sign in{" "}
             </Link>
           </Typography>
         </Grid>
+        <Backdrop
+          className={classes.backdrop}
+          open={open}
+        >
+          <CircularProgress color="secondary" />
+        </Backdrop>
       </Grid>
     </Grid>
   );
