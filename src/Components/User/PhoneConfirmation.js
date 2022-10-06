@@ -2,7 +2,6 @@ import React from "react";
 import { Grid, Typography } from "@material-ui/core";
 import { makeStyles, useTheme } from "@material-ui/styles";
 import { alpha, withStyles } from "@material-ui/core/styles";
-import useMediaQuery from "@material-ui/core/useMediaQuery";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 import logo from "../../assets/logo.png";
@@ -102,15 +101,47 @@ function PhoneConfirmation() {
   const location = useLocation();
   const classes = useStyles();
   const theme = useTheme();
-  const matchesMD = useMediaQuery(theme.breakpoints.down("md"));
+
+  const [otp, setOtp] = React.useState({
+    phoneOtp: ""
+  });
+
+  const [otpErrors, setOtpErrors] = React.useState({
+    phoneOtpError: "",
+  });
 
   const resendOtp = (event) => {
     console.log("otp resent");
     console.log(location.state);
   };
 
-  const createCustomer = (event) => {
+  const setOtpValues = (event) => {
+    event.preventDefault();
+    const fieldName = event.target.name;
+    const fieldValue = event.target.value;
+    setOtp({
+      [fieldName]: fieldValue,
+    });
+  }
 
+  const createCustomer = (event) => {
+    event.preventDefault();
+
+    if(!otp.phoneOtp){
+      setOtpErrors({
+        phoneOtpError: "OTP cannot be empty",
+      });
+      return;
+    }
+
+    if(otp.phoneOtp.length !== 6){
+      setOtpErrors({
+        phoneOtpError: "Invalid OTP",
+      });
+      return;
+    }
+    console.log(otp.phoneOtp);
+    console.log(location.state);
   }
 
   const changePhoneNumber = (event) => {
@@ -162,13 +193,20 @@ function PhoneConfirmation() {
             <FormControl className={classes.margin}>
               <BootstrapInput
                 id="phoneOtp"
+                value={otp.otp}
+                onChange={setOtpValues}
                 inputProps={{
-                  name: "otp",
+                  name: "phoneOtp",
                   id: "phoneOtp",
                 }}
               />
             </FormControl>
           </Grid>
+          {otpErrors.phoneOtpError ? (
+            <InputLabel shrink style={{ color: "red" }}>
+              {otpErrors.phoneOtpError}
+            </InputLabel>
+          ) : undefined}
         </Grid>
 
         <Grid item container className={classes.userForm}>
@@ -185,7 +223,9 @@ function PhoneConfirmation() {
         </Grid>
         <Grid item container className={classes.userForm}>
           <Typography variant="body2">
-              By creating an account or logging in, you agree to Company's Conditions of Use and Privacy Policy.
+              By creating an account or logging in, you agree to Company's 
+              <span className={classes.link}> Conditions of Use </span> and 
+              <span className={classes.link}> Privacy Notice</span>.
           </Typography>
         </Grid>
       </Grid>

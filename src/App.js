@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Signup from "./Components/User/Signup";
 import Footer from "./Components/Common/Footer";
 import PhoneConfirmation from "./Components/User/PhoneConfirmation";
+import Login from "./Components/User/Login";
 
 function App() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Signup />} />
           <Route path="/phoneConfirmation" element = {<PhoneConfirmation />} />
+          <Route path="/login" element = {<Login />} />
           
         </Routes>
        
