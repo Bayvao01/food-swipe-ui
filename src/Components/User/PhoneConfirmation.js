@@ -2,7 +2,6 @@ import React from "react";
 import { Grid, Typography } from "@material-ui/core";
 import { makeStyles, useTheme } from "@material-ui/styles";
 import { alpha, withStyles } from "@material-ui/core/styles";
-import useMediaQuery from "@material-ui/core/useMediaQuery";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 import logo from "../../assets/logo.png";

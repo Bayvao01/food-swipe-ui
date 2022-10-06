@@ -357,7 +357,7 @@ function Signup() {
         });
       }
 
-      if(errorResp.data.status === 1000){
+      if(errorResp.status === 417 || errorResp.status === 503){
         setErrors({
           ...errors,
           generalError: errorResp.data.message,
