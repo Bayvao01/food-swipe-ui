@@ -1,15 +1,14 @@
 import React from "react";
 import { Grid, Typography } from "@material-ui/core";
 import { makeStyles, useTheme } from "@material-ui/styles";
-import { alpha, withStyles } from "@material-ui/core/styles";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
 import logo from "../../assets/logo.png";
-import InputBase from "@material-ui/core/InputBase";
 import SaveIcon from "@material-ui/icons/Save";
 import Button from "@material-ui/core/Button";
 import {useLocation} from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
+import { BootstrapInput } from "../UI/CustomInput";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -62,39 +61,6 @@ const useStyles = makeStyles((theme) => ({
     },
   },
 }));
-
-const BootstrapInput = withStyles((theme) => ({
-  root: {
-    "label + &": {
-      marginTop: theme.spacing(3),
-      fontSize: "13px",
-    },
-  },
-  input: {
-    "&[type=number]": {
-      "-moz-appearance": "textfield",
-    },
-    "&::-webkit-outer-spin-button": {
-      "-webkit-appearance": "none",
-      margin: 0,
-    },
-    "&::-webkit-inner-spin-button": {
-      "-webkit-appearance": "none",
-      margin: 0,
-    },
-    borderRadius: 4,
-    border: "1px solid #ced4da",
-    fontSize: "13px",
-    width: "100%",
-    fontWeight: 400,
-    padding: "5px 8px",
-    fontFamily: ["Roboto", '"Helvetica Neue"', "Arial", "sans-serif"].join(","),
-    "&:focus": {
-      boxShadow: `${alpha(theme.palette.secondary.main, 0.25)} 0 0 0 0.2rem`,
-      borderColor: theme.palette.secondary.main,
-    },
-  },
-}))(InputBase);
 
 function PhoneConfirmation() {
   const navigate = useNavigate();

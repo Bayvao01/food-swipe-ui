@@ -23,7 +23,8 @@ export default createTheme({
     tab: {
       textTransform: "none",
       fontWeight: 700,
-      fontSize: "1rem"  
+      fontSize: "1rem",
+      fontFamily: "Roboto, Helvetica, Arial, sans-serif"
     },
     h5:{
       fontSize: "1.75em",

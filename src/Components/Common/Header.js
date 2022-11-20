@@ -1,6 +1,7 @@
 import React from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
+import { alpha } from "@material-ui/core/styles";
 import { makeStyles, useTheme } from "@material-ui/styles";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
 import Button from "@material-ui/core/Button";
@@ -10,7 +11,7 @@ import Paper from "@material-ui/core/Paper";
 import Popper from "@material-ui/core/Popper";
 import MenuList from "@material-ui/core/MenuList";
 import IconButton from "@material-ui/core/IconButton";
-import { Tab } from "@material-ui/core";
+import { Grid, Tab } from "@material-ui/core";
 import Tabs from "@material-ui/core/Tabs";
 import Avatar from "@material-ui/core/Avatar";
 import MenuItem from "@material-ui/core/MenuItem";
@@ -19,11 +20,16 @@ import MenuIcon from "@material-ui/icons/Menu";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
+import Badge from "@material-ui/core/Badge";
+import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
+import { withStyles } from "@material-ui/core/styles";
+import SearchIcon from "@material-ui/icons/Search";
 
 import logo from "../../assets/logo.png";
 import accountCircle from "../../assets/account_circle.jpg";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
+import { BootstrapInput } from "../UI/CustomInput";
 
 const useStyles = makeStyles((theme) => ({
   toolbarMargin: {
@@ -57,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
   tab: {
     ...theme.typography.tab,
     minWidth: 10,
-    marginLeft: "25px",
+    marginLeft: "25px"
   },
   icon: {
     "&:hover": {
@@ -94,7 +100,20 @@ const useStyles = makeStyles((theme) => ({
       opacity: 1,
     },
   },
+  search: {
+    marginLeft: "auto",
+    width: "100%"
+  }
 }));
+
+const StyledBadge = withStyles((theme) => ({
+  badge: {
+    right: -3,
+    top: 13,
+    border: `2px solid ${theme.palette.background.paper}`,
+    padding: "0 4px",
+  },
+}))(Badge);
 
 function Header(props) {
   const classes = useStyles();
@@ -151,9 +170,11 @@ function Header(props) {
   };
 
   const headers = [
-    { name: "Dashboard", link: "/dashboard", activeIndex: 0 },
-    { name: "About Us", link: "/about", activeIndex: 1 },
-    { name: "Contact Us", link: "/Contact", activeIndex: 2 },
+    { name: "HOME", link: "/home", activeIndex: 0, selectedIndex: 0 },
+    { name: "ABOUT US", link: "/about", activeIndex: 1, selectedIndex: 1 },
+    { name: "SHOP", link: "/shop", activeIndex: 2, selectedIndex: 2 },
+    { name: "CART", link: "/cart", activeIndex: 3, selectedIndex: 3 },
+    { name: "ORDERS", link: "/orders", activeIndex: 4, selectedIndex: 4 },
   ];
 
   const menus = [
@@ -163,10 +184,11 @@ function Header(props) {
 
   useEffect(() => {
     [...headers].forEach((header) => {
+      debugger;
       switch (window.location.pathname) {
         case `${header.link}`:
           if (props.value !== header.activeIndex) {
-            props.setValue(header.name);
+            props.setValue(header.activeIndex);
             if (
               header.selectedIndex &&
               header.selectedIndex !== props.selectedIndex
@@ -176,39 +198,67 @@ function Header(props) {
           }
           break;
         case "/profile":
-          props.setValue(3);
+          props.setValue(5);
           break;
         case "/logout":
-          props.setValue(3);
+          props.setValue(5);
           break;
         default:
           break;
       }
     });
-  });
-
-  
+  }, [props.value, props.selectedIndex, props]);
 
   const tabs = (
     <React.Fragment>
+    
       <Tabs
         className={classes.tabContainer}
         value={props.value}
         onChange={handleTabChange}
         indicatorColor="primary"
       >
-        {headers.map((header, i) => (
-          <Tab
-            key={`${header}${i}`}
-            component={Link}
-            to={header.link}
-            className={classes.tab}
-            label={header.name}
+      <Grid container className={classes.search}>
+          <BootstrapInput
+            placeholder="Search..."
+            id="search"
+            
+            inputProps={{
+              name: "search",
+              id: "search",
+              style: { border: "3px solid black", width: "100%" },
+            }}
+            endAdornment={<SearchIcon />}
           />
-        ))}
+          
+        </Grid>
+        
+        {headers.map((header, i) =>
+          header.activeIndex === 3 ? (<React.Fragment>
+            
+            <IconButton aria-label="cart" component={Link}  to={header.link} className={classes.tab}>
+            <span>{header.name}</span>
+              <StyledBadge  badgeContent={4} color="secondary">
+                <ShoppingCartIcon  /> 
+              </StyledBadge>
+              
+            </IconButton>
+            </React.Fragment>
+            
+          ) : (
+            <Tab
+              key={`${header}${i}`}
+              component={Link}
+              to={header.link}
+              className={classes.tab}
+              label={header.name}
+            />
+          )
+        )}
       </Tabs>
 
-      <IconButton
+      {props.isLoggedIn === true ?
+        <IconButton
         ref={anchorRef}
         aria-controls={openMenu ? "menu-list-grow" : undefined}
         aria-haspopup="true"
@@ -220,6 +270,17 @@ function Header(props) {
       >
         <Avatar alt="Remy Sharp" src={accountCircle} />
       </IconButton>
+      : 
+      <Tab
+              key="login"
+              component={Link}
+              to="/login"
+              className={classes.tab}
+              label="LOGIN"
+            />
+    
+    }
+      
 
       <Popper
         open={openMenu}
